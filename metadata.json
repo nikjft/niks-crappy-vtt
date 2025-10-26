@@ -1,0 +1,5 @@
+{
+  "name": "Nik's Crappy VTT",
+  "description": "A minimalist Dungeons & Dragons virtual tabletop designed for local use with a master controller window and a secondary player display. Features include image library management, map panning and zooming, and synchronized viewing across two screens.",
+  "requestFramePermissions": []
+}

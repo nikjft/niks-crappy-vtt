@@ -1,0 +1,16 @@
+{
+  "short_name": "VTT",
+  "name": "Nik's Crappy VTT",
+  "description": "A minimalist Dungeons & Dragons virtual tabletop designed for local use with a master controller window and a secondary player display.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1c1917",
+  "background_color": "#1c1917"
+}
