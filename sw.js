@@ -10,6 +10,7 @@ const urlsToCache = [
   '/hooks/useWindowSync.ts',
   '/hooks/useImageLibrary.ts',
   '/hooks/useFullScreen.ts',
+  '/hooks/useServiceWorker.ts',
   '/components/Icons.tsx',
   '/components/Viewport.tsx',
   '/components/NavControls.tsx',
@@ -35,30 +36,52 @@ self.addEventListener('install', (event) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting()) // Activate new SW immediately
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((response) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          // Check if we received a valid response
-          if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
-            // Network fetch failed, probably offline, the cached response (if any) is already being returned.
-        });
+  // We only want to handle GET requests.
+  if (event.request.method !== 'GET') {
+    return;
+  }
 
-        // Return the cached response immediately if it exists, otherwise wait for the network.
-        return response || fetchPromise;
-      });
-    })
+  event.respondWith(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+
+      // 1. Try to get the response from the cache.
+      const cachedResponse = await cache.match(event.request);
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      // 2. If not in cache, try to fetch from the network.
+      try {
+        const networkResponse = await fetch(event.request);
+
+        // If the fetch is successful, clone it and store it in the cache for future use.
+        if (networkResponse && networkResponse.ok) {
+          const responseToCache = networkResponse.clone();
+          await cache.put(event.request, responseToCache);
+        }
+        
+        return networkResponse;
+      } catch (error) {
+        // The network fetch failed, likely because the user is offline.
+        // Since we didn't find it in the cache, we let the request fail.
+        console.error('Fetch failed, and no cache match was found for:', event.request.url, error);
+        throw error;
+      }
+    })()
   );
 });
+
 
 self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
